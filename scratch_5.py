@@ -316,13 +316,9 @@ class ClickomaniaGame(QWidget):
             return False  # Группа не была удалена
 
     def play_sound_effect(self):
-        if self.sound_effect.volume() == 0:
-            return  # Не воспроизводить звук, если громкость равна нулю
-
-        print("Воспроизведение звукового эффекта...")
-        # Проверяем, играет ли звуковой эффект; если да, останавливаем его перед воспроизведением нового
-        if self.sound_effect.state() == QMediaPlayer.PlayingState:
-            self.sound_effect.stop()
+        print("Воспроизведение звукового эффекта...")  # Добавьте эту строку для отладки
+        self.sound_effect = QMediaPlayer(self)
+        self.sound_effect.setMedia(QMediaContent(QUrl.fromLocalFile("da.wav")))
         # Воспроизводим звуковой эффект
         self.sound_effect.play()
 
