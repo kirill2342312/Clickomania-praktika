@@ -10,9 +10,8 @@ class SettingsWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        # Создаем объект QSoundEffect при инициализации виджета
-        self.sound_effect = QSoundEffect(self)
-        self.sound_effect.setSource(QUrl.fromLocalFile("da.wav"))
+        # Добавляем атрибут для хранения объекта QSoundEffect
+        self.sound_effect = None
 
     def initUI(self):
         layout = QVBoxLayout()
@@ -25,7 +24,7 @@ class SettingsWidget(QWidget):
         volume_label = QLabel("Громкость")
         layout.addWidget(volume_label)
         volume_label.setStyleSheet("font-size: 18pt;")
-
+        self.setLayout(layout)
         # Создаем ползунок громкости
         self.volume_slider = QSlider(Qt.Horizontal)
         self.volume_slider.setMinimum(0)
@@ -33,17 +32,18 @@ class SettingsWidget(QWidget):
         self.volume_slider.setValue(50)  # Начальное значение громкости
         layout.addWidget(self.volume_slider)
 
+        self.setLayout(layout)
+
         # Связываем изменение значения ползунка с методом set_volume
         self.volume_slider.valueChanged.connect(self.set_volume)
-
-        self.setLayout(layout)
 
     def set_volume(self, value):
         print("Громкость изменена на:", value)
         # Устанавливаем громкость звукового эффекта в соответствии с текущим значением ползунка
-        volume = value / 100.0  # Приводим значение к диапазону от 0.0 до 1.0
-        print("Громкость в диапазоне от 0.0 до 1.0:", volume)
-        self.sound_effect.setVolume(volume)
+        if self.sound_effect:
+            volume = value / 100.0  # Приводим значение к диапазону от 0.0 до 1.0
+            print("Громкость в диапазоне от 0.0 до 1.0:", volume)
+            self.sound_effect.setVolume(volume)
 
 
 class TimerThread(QThread):
@@ -134,6 +134,8 @@ class ClickomaniaGame(QWidget):
         self.timer_thread.timeChanged.connect(self.update_time_label)
         self.timer_thread.start()
 
+        self.load_personal_record()
+
     def initUI(self):
         self.setWindowTitle('Кликомания')
         self.setGeometry(100, 100, 800, 800)
@@ -158,6 +160,11 @@ class ClickomaniaGame(QWidget):
         self.score_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_layout.addWidget(self.score_label)
 
+        self.personal_record = 0
+        self.personal_record_label = QLabel(f'Личный рекорд: {self.personal_record}')
+        self.personal_record_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        self.button_layout.addWidget(self.personal_record_label)
+
         self.game_time = QTime(0, 0)
         self.time_label = QLabel('Время: 00:00')
         self.time_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
@@ -175,6 +182,29 @@ class ClickomaniaGame(QWidget):
     def initSoundEffect(self):
         self.sound_effect = QSoundEffect(self)
         self.sound_effect.setSource(QUrl.fromLocalFile("da.wav"))
+
+    def load_personal_record(self):
+        try:
+            with open('personal_record.txt', 'r') as f:
+                self.personal_record = int(f.read())
+                self.personal_record_label.setText(f'Личный рекорд: {self.personal_record}')
+        except FileNotFoundError:
+            self.personal_record = 0
+
+    def save_personal_record(self):
+        with open('personal_record.txt', 'w') as f:
+            f.write(str(self.personal_record))
+
+    def update_personal_record(self, score):
+        if score > self.personal_record:
+            self.personal_record = score
+            self.save_personal_record()
+        self.personal_record_label.setText(f'Личный рекорд: {self.personal_record}')
+
+    def delete_cubes(self):
+        # код удаления кубиков
+        score = self.score
+        self.update_personal_record(score)
 
     def create_grid(self, rows, cols):
         self.buttons = []
@@ -310,6 +340,8 @@ class ClickomaniaGame(QWidget):
 
             # Применяем гравитацию после удаления группы
             self.apply_gravity()
+
+            self.update_personal_record(self.score)  # Обновляем личный рекорд после удаления группы
 
             return True  # Группа была успешно удалена
         else:
