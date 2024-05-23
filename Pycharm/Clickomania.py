@@ -1,16 +1,14 @@
 from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer, QMediaContent
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QGridLayout, QLabel, QSlider, \
-    QStackedWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtCore import QTimer, QTime, Qt, pyqtSignal, QThread, QUrl
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QGridLayout, QLabel, QSlider, QStackedWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtCore import QTimer, QTime, pyqtSignal, QThread, QUrl, Qt
 import random
 import sys
-
+from functools import partial
 
 class SettingsWidget(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
-        # Добавляем атрибут для хранения объекта QSoundEffect
         self.sound_effect = None
 
     def initUI(self):
@@ -25,23 +23,21 @@ class SettingsWidget(QWidget):
         layout.addWidget(volume_label)
         volume_label.setStyleSheet("font-size: 18pt;")
         self.setLayout(layout)
-        # Создаем ползунок громкости
+
         self.volume_slider = QSlider(Qt.Horizontal)
         self.volume_slider.setMinimum(0)
         self.volume_slider.setMaximum(100)
-        self.volume_slider.setValue(50)  # Начальное значение громкости
+        self.volume_slider.setValue(50)
         layout.addWidget(self.volume_slider)
 
         self.setLayout(layout)
 
-        # Связываем изменение значения ползунка с методом set_volume
         self.volume_slider.valueChanged.connect(self.set_volume)
 
     def set_volume(self, value):
         print("Громкость изменена на:", value)
-        # Устанавливаем громкость звукового эффекта в соответствии с текущим значением ползунка
         if self.sound_effect:
-            volume = value / 100.0  # Приводим значение к диапазону от 0.0 до 1.0
+            volume = value / 100.0
             print("Громкость в диапазоне от 0.0 до 1.0:", volume)
             self.sound_effect.setVolume(volume)
 
@@ -70,10 +66,10 @@ class MainMenu(QMainWindow):
         self.initUI()
 
     def initUI(self):
-        self.setWindowTitle('Главное меню')
+        self.setWindowTitle('Кликомания')
         self.setFixedSize(600, 600)
 
-        self.sound_effect = QSoundEffect(self)  # Инициализируем объект QSoundEffect здесь
+        self.sound_effect = QSoundEffect(self)
 
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
@@ -102,7 +98,7 @@ class MainMenu(QMainWindow):
         self.central_widget.addWidget(self.main_menu_widget)
 
         self.settings_widget = SettingsWidget()
-        self.settings_widget.sound_effect = self.sound_effect  # Передаем объект QSoundEffect
+        self.settings_widget.sound_effect = self.sound_effect
         back_button = QPushButton('Назад')
         back_button.clicked.connect(self.show_main_menu)
         self.settings_widget.layout().addWidget(back_button)
@@ -125,9 +121,10 @@ class MainMenu(QMainWindow):
 class ClickomaniaGame(QWidget):
     returnToMainMenu = pyqtSignal()
 
-    def __init__(self, sound_effect=None):  # Принимаем sound_effect в качестве аргумента
+    def __init__(self, sound_effect=None):
         super().__init__()
-        self.sound_effect = sound_effect  # Инициализируем атрибут sound_effect
+        self.first_click = None
+        self.sound_effect = sound_effect
         self.game_time = None
         self.initUI()
         self.timer_thread = TimerThread()
@@ -187,9 +184,10 @@ class ClickomaniaGame(QWidget):
         try:
             with open('personal_record.txt', 'r') as f:
                 self.personal_record = int(f.read())
-                self.personal_record_label.setText(f'Личный рекорд: {self.personal_record}')
         except FileNotFoundError:
             self.personal_record = 0
+
+        self.personal_record_label.setText(f'Личный рекорд: {self.personal_record}')
 
     def save_personal_record(self):
         with open('personal_record.txt', 'w') as f:
@@ -202,7 +200,6 @@ class ClickomaniaGame(QWidget):
         self.personal_record_label.setText(f'Личный рекорд: {self.personal_record}')
 
     def delete_cubes(self):
-        # код удаления кубиков
         score = self.score
         self.update_personal_record(score)
 
@@ -223,26 +220,17 @@ class ClickomaniaGame(QWidget):
                 row_buttons.append(button)
             self.buttons.append(row_buttons)
 
-            # Добавляем пустые QLabel'ы в конец строки для сохранения исходного положения
-            for _ in range(cols, 10):
-                empty_label = QLabel('')
-                empty_label.setFixedSize(40, 40)
-                self.grid_layout.addWidget(empty_label, i, j + 1)
-
-        # Добавляем пустые строки в конец сетки, если необходимо
         for i in range(rows, 10):
             for j in range(10):
                 empty_label = QLabel('')
                 empty_label.setFixedSize(40, 40)
                 self.grid_layout.addWidget(empty_label, i, j)
 
-        # Добавляем пустые виджеты в конец каждой строки
         for i in range(rows):
             empty_widget = QWidget()
             empty_widget.setFixedSize(40, 40)
             self.grid_layout.addWidget(empty_widget, i, cols)
 
-        # Добавляем пустые виджеты в конец каждого столбца
         for j in range(cols + 1):
             empty_widget = QWidget()
             empty_widget.setFixedSize(40, 40)
@@ -262,10 +250,8 @@ class ClickomaniaGame(QWidget):
     def restart_game(self):
         self.reset_score()
 
-        # Останавливаем таймер при перезапуске игры
         self.timer_thread.stop()
 
-        # Сбрасываем счетчик времени и обновляем метку времени
         self.reset_timer()
 
         for row in range(len(self.buttons)):
@@ -282,7 +268,6 @@ class ClickomaniaGame(QWidget):
         self.timer_thread.start()
 
     def reset_timer(self):
-        # Сбрасываем время и обновляем метку времени
         self.game_time = QTime(0, 0)
         self.update_time_label(self.game_time)
 
@@ -303,7 +288,6 @@ class ClickomaniaGame(QWidget):
         color = self.buttons[row][col].palette().button().color().name()
 
         if self.remove_group(color, row, col):
-            # Проверяем, успешно ли была удалена группа
             self.check_empty_columns()
 
     def check_empty_columns(self):
@@ -325,63 +309,69 @@ class ClickomaniaGame(QWidget):
         self.find_adjacent_buttons(color, row, col, group)
 
         if len(group) > 1:
-            self.play_sound_effect()  # Добавляем звуковой эффект при удалении группы
-            self.score += len(group)  # Увеличиваем счет при удалении группы
+            self.play_sound_effect()
+            self.score += len(group)
             self.update_score_label()
 
-            # Перебираем кубики в группе и удаляем их
             for r, c in group:
                 button = self.buttons[r][c]
                 if button is not None:
-                    # Удаляем кнопку из сетки
                     self.grid_layout.removeWidget(button)
                     button.deleteLater()
                     self.buttons[r][c] = None
 
-            # Применяем гравитацию после удаления группы
             self.apply_gravity()
-
-            self.update_personal_record(self.score)  # Обновляем личный рекорд после удаления группы
-
-            return True  # Группа была успешно удалена
+            self.remove_empty_columns()
+            self.update_personal_record(self.score)
+            return True
         else:
-            return False  # Группа не была удалена
+            return False
 
-    def play_sound_effect(self):
-        print("Воспроизведение звукового эффекта...")  # Добавьте эту строку для отладки
-        self.sound_effect = QMediaPlayer(self)
-        self.sound_effect.setMedia(QMediaContent(QUrl.fromLocalFile("da.wav")))
-        # Воспроизводим звуковой эффект
-        self.sound_effect.play()
+    def remove_empty_columns(self):
+        for col in range(len(self.buttons[0])):
+            if self.is_column_empty(col):
+                self.remove_column(col)
 
     def remove_column(self, col):
-        # Удаляем все кнопки в столбце
         for row in range(len(self.buttons)):
             button = self.buttons[row][col]
             if button is not None:
                 button.deleteLater()
-                self.buttons[r][c] = None
+                self.buttons[row][col] = None
                 self.grid_layout.removeWidget(button)
 
-        # Смещаем кубики влево для каждой строки
         for row in range(len(self.buttons)):
-            for j in range(col + 1, 10):
-                button = self.buttons[row][j]
-                if button is not None:
-                    self.buttons[row][j - 1] = button
-                    self.buttons[row][j] = None
-                    self.grid_layout.addWidget(button, row, j - 1)
+            for j in range(col, len(self.buttons[0]) - 1):
+                self.buttons[row][j] = self.buttons[row][j + 1]
+                if self.buttons[row][j] is not None:
+                    self.grid_layout.removeWidget(self.buttons[row][j])
+                    self.grid_layout.addWidget(self.buttons[row][j], row, j)
+                    self.buttons[row][j].clicked.disconnect()
+                    self.buttons[row][j].clicked.connect(partial(self.on_button_click, row, j))
+
+            self.buttons[row][len(self.buttons[0]) - 1] = None
+
+        for row in range(len(self.buttons)):
+            for col in range(len(self.buttons[row])):
+                if self.buttons[row][col] is not None:
+                    self.buttons[row][col].clicked.disconnect()
+                    self.buttons[row][col].clicked.connect(partial(self.on_button_click, row, col))
+
+    def play_sound_effect(self):
+        self.sound_effect = QMediaPlayer(self)
+        self.sound_effect.setMedia(QMediaContent(QUrl.fromLocalFile("da.wav")))
+        self.sound_effect.play()
 
     def find_adjacent_buttons(self, color, row, col, group, visited=None):
         if visited is None:
             visited = set()
 
         if (
-                row < 0 or row >= len(self.buttons) or
-                col < 0 or col >= len(self.buttons[0]) or
-                (row, col) in visited or
-                self.buttons[row][col] is None or
-                self.buttons[row][col].palette().button().color().name() != color
+            row < 0 or row >= len(self.buttons) or
+            col < 0 or col >= len(self.buttons[0]) or
+            (row, col) in visited or
+            self.buttons[row][col] is None or
+            self.buttons[row][col].palette().button().color().name() != color
         ):
             return
 
@@ -395,22 +385,28 @@ class ClickomaniaGame(QWidget):
 
     def apply_gravity(self):
         for col in range(len(self.buttons[0])):
-            empty_cells = 0
+            empty_row = len(self.buttons) - 1
+
             for row in range(len(self.buttons) - 1, -1, -1):
                 button = self.buttons[row][col]
+                if button is not None:
+                    if empty_row != row:
+                        self.buttons[empty_row][col] = button
+                        self.buttons[row][col] = None
 
-                if button is None:
-                    empty_cells += 1
-                elif empty_cells > 0:
-                    self.buttons[row + empty_cells][col] = button
-                    self.buttons[row][col] = None
+                        self.grid_layout.removeWidget(button)
+                        self.grid_layout.addWidget(button, empty_row, col)
 
-                    self.grid_layout.removeWidget(button)
+                        button.clicked.disconnect()
+                        button.clicked.connect(partial(self.on_button_click, empty_row, col))
 
-                    self.grid_layout.addWidget(button, row + empty_cells, col)
+                    empty_row -= 1
 
-                    button.clicked.disconnect()
-                    button.clicked.connect(lambda _, row=row + empty_cells, col=col: self.on_button_click(row, col))
+            for row in range(empty_row, -1, -1):
+                self.buttons[row][col] = None
+                empty_widget = QWidget()
+                empty_widget.setFixedSize(40, 40)
+                self.grid_layout.addWidget(empty_widget, row, col)
 
     def update_time(self):
         if self.first_click:
