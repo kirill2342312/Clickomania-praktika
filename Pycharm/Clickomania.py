@@ -1,9 +1,10 @@
-from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer, QMediaContent
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QGridLayout, QLabel, QSlider, QStackedWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QSlider, QStackedWidget, QHBoxLayout, QSizePolicy
 from PyQt5.QtCore import QTimer, QTime, pyqtSignal, QThread, QUrl, Qt
+from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer, QMediaContent
 import random
 import sys
 from functools import partial
+
 
 class SettingsWidget(QWidget):
     def __init__(self):
@@ -187,7 +188,7 @@ class ClickomaniaGame(QWidget):
         except FileNotFoundError:
             self.personal_record = 0
 
-        self.personal_record_label.setText(f'Личный рекорд: {self.personal_record}')
+        self.personal_record_label.setText(f'Личный рекорд:{self.personal_record}')
 
     def save_personal_record(self):
         with open('personal_record.txt', 'w') as f:
@@ -290,20 +291,6 @@ class ClickomaniaGame(QWidget):
         if self.remove_group(color, row, col):
             self.check_empty_columns()
 
-    def check_empty_columns(self):
-        empty_columns = []
-        for col in range(len(self.buttons)):
-            if self.is_column_empty(col):
-                empty_columns.append(col)
-        for col in empty_columns:
-            self.remove_column(col)
-
-    def column_has_blocks(self, col):
-        for row in range(len(self.buttons)):
-            if self.buttons[row][col] is not None:
-                return True
-        return False
-
     def remove_group(self, color, row, col):
         group = set()
         self.find_adjacent_buttons(color, row, col, group)
@@ -327,35 +314,56 @@ class ClickomaniaGame(QWidget):
         else:
             return False
 
-    def remove_empty_columns(self):
-        for col in range(len(self.buttons[0])):
+    def remove_column(self, col):
+        # Удаляем виджеты из удалённого столбца
+        for row in range(len(self.buttons)):
+            if self.buttons[row][col] is not None:
+                self.grid_layout.removeWidget(self.buttons[row][col])
+                self.buttons[row][col].deleteLater()
+                self.buttons[row][col] = None
+
+        # Сдвигаем все столбцы влево
+        for j in range(col + 1, len(self.buttons[0])):
+            for row in range(len(self.buttons)):
+                self.buttons[row][j - 1] = self.buttons[row][j]
+                if self.buttons[row][j - 1] is not None:
+                    self.grid_layout.removeWidget(self.buttons[row][j - 1])
+                    self.grid_layout.addWidget(self.buttons[row][j - 1], row, j - 1)
+                    # Обновляем сигнал нажатия кнопки
+                    self.buttons[row][j - 1].clicked.disconnect()
+                    self.buttons[row][j - 1].clicked.connect(partial(self.on_button_click, row, j - 1))
+
+        # Очищаем последний столбец
+        for row in range(len(self.buttons)):
+            self.buttons[row][len(self.buttons[0]) - 1] = None
+
+        # Обновляем интерфейс после всех изменений
+        self.grid_layout.update()
+
+    def check_empty_columns(self):
+        for col in range(len(self.buttons[0]) - 1, -1, -1):
             if self.is_column_empty(col):
                 self.remove_column(col)
 
-    def remove_column(self, col):
-        for row in range(len(self.buttons)):
-            button = self.buttons[row][col]
-            if button is not None:
-                button.deleteLater()
-                self.buttons[row][col] = None
-                self.grid_layout.removeWidget(button)
-
-        for row in range(len(self.buttons)):
-            for j in range(col, len(self.buttons[0]) - 1):
-                self.buttons[row][j] = self.buttons[row][j + 1]
-                if self.buttons[row][j] is not None:
-                    self.grid_layout.removeWidget(self.buttons[row][j])
-                    self.grid_layout.addWidget(self.buttons[row][j], row, j)
-                    self.buttons[row][j].clicked.disconnect()
-                    self.buttons[row][j].clicked.connect(partial(self.on_button_click, row, j))
-
-            self.buttons[row][len(self.buttons[0]) - 1] = None
-
-        for row in range(len(self.buttons)):
-            for col in range(len(self.buttons[row])):
+    def apply_gravity(self):
+        for col in range(len(self.buttons[0])):
+            empty_row = len(self.buttons) - 1
+            for row in range(len(self.buttons) - 1, -1, -1):
                 if self.buttons[row][col] is not None:
-                    self.buttons[row][col].clicked.disconnect()
-                    self.buttons[row][col].clicked.connect(partial(self.on_button_click, row, col))
+                    button = self.buttons[row][col]
+                    if empty_row != row:
+                        self.buttons[empty_row][col] = button
+                        self.buttons[row][col] = None
+                        self.grid_layout.removeWidget(button)
+                        self.grid_layout.addWidget(button, empty_row, col)
+                        button.clicked.disconnect()
+                        button.clicked.connect(partial(self.on_button_click, empty_row, col))
+                    empty_row -= 1
+
+    def remove_empty_columns(self):
+        for col in range(len(self.buttons[0]) - 1, -1, -1):
+            if self.is_column_empty(col):
+                self.remove_column(col)
 
     def play_sound_effect(self):
         self.sound_effect = QMediaPlayer(self)
@@ -383,31 +391,6 @@ class ClickomaniaGame(QWidget):
         self.find_adjacent_buttons(color, row, col + 1, group, visited)
         self.find_adjacent_buttons(color, row, col - 1, group, visited)
 
-    def apply_gravity(self):
-        for col in range(len(self.buttons[0])):
-            empty_row = len(self.buttons) - 1
-
-            for row in range(len(self.buttons) - 1, -1, -1):
-                button = self.buttons[row][col]
-                if button is not None:
-                    if empty_row != row:
-                        self.buttons[empty_row][col] = button
-                        self.buttons[row][col] = None
-
-                        self.grid_layout.removeWidget(button)
-                        self.grid_layout.addWidget(button, empty_row, col)
-
-                        button.clicked.disconnect()
-                        button.clicked.connect(partial(self.on_button_click, empty_row, col))
-
-                    empty_row -= 1
-
-            for row in range(empty_row, -1, -1):
-                self.buttons[row][col] = None
-                empty_widget = QWidget()
-                empty_widget.setFixedSize(40, 40)
-                self.grid_layout.addWidget(empty_widget, row, col)
-
     def update_time(self):
         if self.first_click:
             self.game_time = self.game_time.addSecs(1)
@@ -419,3 +402,5 @@ if __name__ == '__main__':
     main_menu = MainMenu()
     main_menu.show()
     sys.exit(app.exec_())
+
+
