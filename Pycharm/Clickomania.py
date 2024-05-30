@@ -36,7 +36,11 @@ class SettingsWidget(QWidget):
 
     def toggle_volume(self):
         self.volume_enabled = not self.volume_enabled
-        print(f"Звук {'включен' if self.volume_enabled else 'выключен'}")
+        if self.sound_effect:
+            if self.volume_enabled:
+                self.sound_effect.setVolume(100)
+            else:
+                self.sound_effect.setVolume(0)
 
 
 class TimerThread(QThread):
