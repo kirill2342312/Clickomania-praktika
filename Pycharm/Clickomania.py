@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QSlider, QStackedWidget, QHBoxLayout, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QStackedWidget, QHBoxLayout, QSizePolicy, QCheckBox
 from PyQt5.QtCore import QTimer, QTime, pyqtSignal, QThread, QUrl, Qt
-from PyQt5.QtMultimedia import QSoundEffect, QMediaPlayer, QMediaContent
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import random
 import sys
 from functools import partial
@@ -11,36 +11,32 @@ class SettingsWidget(QWidget):
         super().__init__()
         self.initUI()
         self.sound_effect = None
+        self.volume_enabled = True
 
     def initUI(self):
         layout = QVBoxLayout()
 
         label = QLabel("Настройки")
         label.setStyleSheet("font-size: 24pt;")
-        label.setAlignment(Qt.AlignCenter)
+        label.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
         layout.addWidget(label)
 
-        volume_label = QLabel("Громкость")
+        volume_label = QLabel("Звук")
         layout.addWidget(volume_label)
         volume_label.setStyleSheet("font-size: 18pt;")
-        self.setLayout(layout)
 
-        self.volume_slider = QSlider(Qt.Horizontal)
-        self.volume_slider.setMinimum(0)
-        self.volume_slider.setMaximum(100)
-        self.volume_slider.setValue(50)
-        layout.addWidget(self.volume_slider)
+        self.volume_checkbox = QCheckBox("Включить звук")
+        self.volume_checkbox.setChecked(True)
+        self.volume_checkbox.setStyleSheet("font-size: 18pt;")
+        layout.addWidget(self.volume_checkbox)
 
         self.setLayout(layout)
 
-        self.volume_slider.valueChanged.connect(self.set_volume)
+        self.volume_checkbox.stateChanged.connect(self.toggle_volume)
 
-    def set_volume(self, value):
-        print("Громкость изменена на:", value)
-        if self.sound_effect:
-            volume = value / 100.0
-            print("Громкость в диапазоне от 0.0 до 1.0:", volume)
-            self.sound_effect.setVolume(volume)
+    def toggle_volume(self):
+        self.volume_enabled = not self.volume_enabled
+        print(f"Звук {'включен' if self.volume_enabled else 'выключен'}")
 
 
 class TimerThread(QThread):
@@ -70,7 +66,7 @@ class MainMenu(QMainWindow):
         self.setWindowTitle('Кликомания')
         self.setFixedSize(600, 600)
 
-        self.sound_effect = QSoundEffect(self)
+        self.sound_effect = QMediaPlayer(self)
 
         self.central_widget = QStackedWidget()
         self.setCentralWidget(self.central_widget)
@@ -79,7 +75,7 @@ class MainMenu(QMainWindow):
         layout = QVBoxLayout()
 
         game_label = QLabel('Кликомания')
-        game_label.setAlignment(Qt.AlignCenter)
+        game_label.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
         game_label.setStyleSheet("font-size: 36pt;")
         layout.addWidget(game_label)
 
@@ -94,6 +90,9 @@ class MainMenu(QMainWindow):
         exit_button = QPushButton('Выход')
         exit_button.clicked.connect(self.close)
         layout.addWidget(exit_button)
+
+        # Выравнивание по центру
+        layout.setAlignment(Qt.AlignHCenter)
 
         self.main_menu_widget.setLayout(layout)
         self.central_widget.addWidget(self.main_menu_widget)
@@ -163,7 +162,7 @@ class ClickomaniaGame(QWidget):
         self.personal_record_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_layout.addWidget(self.personal_record_label)
 
-        self.game_time = QTime(0, 0)
+        self.game_time = QTime(0        , 0)
         self.time_label = QLabel('Время: 00:00')
         self.time_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_layout.addWidget(self.time_label)
@@ -177,10 +176,6 @@ class ClickomaniaGame(QWidget):
         self.game_started = False
         self.first_click = False
 
-    def initSoundEffect(self):
-        self.sound_effect = QSoundEffect(self)
-        self.sound_effect.setSource(QUrl.fromLocalFile("da.wav"))
-
     def load_personal_record(self):
         try:
             with open('personal_record.txt', 'r') as f:
@@ -188,7 +183,7 @@ class ClickomaniaGame(QWidget):
         except FileNotFoundError:
             self.personal_record = 0
 
-        self.personal_record_label.setText(f'Личный рекорд:{self.personal_record}')
+        self.personal_record_label.setText(f'Личный рекорд: {self.personal_record}')
 
     def save_personal_record(self):
         with open('personal_record.txt', 'w') as f:
@@ -361,13 +356,16 @@ class ClickomaniaGame(QWidget):
                     empty_row -= 1
 
     def remove_empty_columns(self):
-        for col in range(len(self.buttons[0]) - 1, -1, -1):
+        for col in range(len(self.buttons[0]) -1, -1, -1):
             if self.is_column_empty(col):
                 self.remove_column(col)
 
     def play_sound_effect(self):
-        self.sound_effect = QMediaPlayer(self)
-        self.sound_effect.setMedia(QMediaContent(QUrl.fromLocalFile("da.wav")))
+        if self.sound_effect.state() == QMediaPlayer.PlayingState:
+            self.sound_effect.stop()
+
+        media = QMediaContent(QUrl.fromLocalFile("da.wav"))
+        self.sound_effect.setMedia(media)
         self.sound_effect.play()
 
     def find_adjacent_buttons(self, color, row, col, group, visited=None):
