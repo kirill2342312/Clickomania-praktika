@@ -368,7 +368,7 @@ class ClickomaniaGame(QWidget):
         if self.sound_effect.state() == QMediaPlayer.PlayingState:
             self.sound_effect.stop()
 
-        media = QMediaContent(QUrl.fromLocalFile("da.wav"))
+        media = QMediaContent(QUrl.fromLocalFile("sound.wav"))
         self.sound_effect.setMedia(media)
         self.sound_effect.play()
 
@@ -404,5 +404,4 @@ if __name__ == '__main__':
     main_menu = MainMenu()
     main_menu.show()
     sys.exit(app.exec_())
-
 
