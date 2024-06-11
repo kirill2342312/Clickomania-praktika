@@ -1,5 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, \
-    QStackedWidget, QHBoxLayout, QSizePolicy, QCheckBox, QMessageBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QStackedWidget, QHBoxLayout, QSizePolicy, QCheckBox, QMessageBox
 from PyQt5.QtCore import QTimer, QTime, pyqtSignal, QThread, QUrl, Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import random
