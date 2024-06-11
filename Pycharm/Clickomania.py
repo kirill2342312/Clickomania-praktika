@@ -122,7 +122,7 @@ class MainMenu(QMainWindow):
         settings_button.clicked.connect(self.show_settings)
         layout.addWidget(settings_button)
 
-        guide_button = QPushButton('Руководство')  # Добавляем кнопку "Руководство"
+        guide_button = QPushButton('Руководство')  
         guide_button.clicked.connect(self.show_guide)
         layout.addWidget(guide_button)
 
@@ -142,7 +142,7 @@ class MainMenu(QMainWindow):
         self.settings_widget.layout().addWidget(back_button)
         self.central_widget.addWidget(self.settings_widget)
 
-        self.guide_widget = GuideWidget()  # Создаем виджет "Руководство"
+        self.guide_widget = GuideWidget() 
         self.guide_widget.returnToMainMenu.connect(self.show_main_menu)
         self.central_widget.addWidget(self.guide_widget)
 
@@ -267,7 +267,7 @@ class ClickomaniaGame(QWidget):
         if not any(self.has_adjacent_same_color(i, j) for i in range(len(self.buttons)) for j in
                    range(len(self.buttons[i])) if self.buttons[i][j] is not None):
             QTimer.singleShot(100, lambda: self.show_message("Конец игры", "Больше нет смежных кубиков. Вы проиграли ;("))
-            self.stop_game()  # Останавливаем игру при поражении
+            self.stop_game()  
             return
 
     def has_adjacent_same_color(self, row, col):
@@ -395,8 +395,7 @@ class ClickomaniaGame(QWidget):
             self.remove_empty_columns()
             self.update_personal_record(self.score)
 
-            # Проверка состояния игры после удаления группы
-            self.check_game_state()
+            self.check_game_state() # Проверка состояния игры после удаления группы
 
             return True
         else:
