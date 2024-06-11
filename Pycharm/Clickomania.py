@@ -260,13 +260,13 @@ class ClickomaniaGame(QWidget):
     def check_game_state(self):
         # Проверка на победу
         if all(button is None for row in self.buttons for button in row):
-            QTimer.singleShot(100, lambda: self.show_message("Поздравляем!", "Вы очистили все кубики и выиграли!"))
+            QTimer.singleShot(100, lambda: self.show_message("Поздравляем!", "Вы очистили все кубики, Вы выиграли!"))
             return
 
         # Проверка на поражение
         if not any(self.has_adjacent_same_color(i, j) for i in range(len(self.buttons)) for j in
                    range(len(self.buttons[i])) if self.buttons[i][j] is not None):
-            QTimer.singleShot(100, lambda: self.show_message("Конец игры", "Нет доступных ходов. Вы проиграли."))
+            QTimer.singleShot(100, lambda: self.show_message("Конец игры", "Больше нет смежных кубиков. Вы проиграли ;("))
             self.stop_game()  # Останавливаем игру при поражении
             return
 
@@ -300,7 +300,7 @@ class ClickomaniaGame(QWidget):
                 button.setFixedSize(40, 40)
                 button.setMinimumSize(40, 40)
                 button.setMaximumSize(40, 40)
-                button.clicked.connect(lambda _, row=i, col=j: self.on_button_click(row, col))
+                button.clicked.connect(partial(self.on_button_click, row=i, col=j))
                 self.grid_layout.addWidget(button, i, j)
                 row_buttons.append(button)
             self.buttons.append(row_buttons)
