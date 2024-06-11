@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QStackedWidget, QHBoxLayout, QSizePolicy, QCheckBox
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, \
+    QStackedWidget, QHBoxLayout, QSizePolicy, QCheckBox, QMessageBox
 from PyQt5.QtCore import QTimer, QTime, pyqtSignal, QThread, QUrl, Qt
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import random
@@ -257,6 +258,37 @@ class ClickomaniaGame(QWidget):
         score = self.score
         self.update_personal_record(score)
 
+    def check_game_state(self):
+        # Проверка на победу
+        if all(button is None for row in self.buttons for button in row):
+            QTimer.singleShot(100, lambda: self.show_message("Поздравляем!", "Вы очистили все кубики и выиграли!"))
+            return
+
+        # Проверка на поражение
+        if not any(self.has_adjacent_same_color(i, j) for i in range(len(self.buttons)) for j in
+                   range(len(self.buttons[i])) if self.buttons[i][j] is not None):
+            QTimer.singleShot(100, lambda: self.show_message("Конец игры", "Нет доступных ходов. Вы проиграли."))
+            self.stop_game()  # Останавливаем игру при поражении
+            return
+
+    def has_adjacent_same_color(self, row, col):
+        color = self.buttons[row][col].palette().button().color().name()
+        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+        for dr, dc in directions:
+            r, c = row + dr, col + dc
+            if 0 <= r < len(self.buttons) and 0 <= c < len(self.buttons[row]) and self.buttons[r][c] is not None:
+                if self.buttons[r][c].palette().button().color().name() == color:
+                    return True
+        return False
+
+    def show_message(self, title, text):
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(text)
+        msg_box.setStandardButtons(QMessageBox.Ok)
+        msg_box.exec_()
+
+
     def create_grid(self, rows, cols):
         self.buttons = []
 
@@ -363,6 +395,10 @@ class ClickomaniaGame(QWidget):
             self.apply_gravity()
             self.remove_empty_columns()
             self.update_personal_record(self.score)
+
+            # Проверка состояния игры после удаления группы
+            self.check_game_state()
+
             return True
         else:
             return False
@@ -446,6 +482,14 @@ class ClickomaniaGame(QWidget):
         if self.first_click:
             self.game_time = self.game_time.addSecs(1)
             self.time_label.setText(f'Время: {self.game_time.toString("mm:ss")}')
+
+    def stop_game(self):
+        self.timer_thread.stop()
+        for row in self.buttons:
+            for button in row:
+                if button is not None:
+                    button.setEnabled(False)
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
