@@ -5,7 +5,6 @@ import random
 import sys
 from functools import partial
 
-
 class SettingsWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -42,7 +41,6 @@ class SettingsWidget(QWidget):
             else:
                 self.sound_effect.setVolume(0)
 
-
 class TimerThread(QThread):
     timeChanged = pyqtSignal(QTime)
 
@@ -60,6 +58,39 @@ class TimerThread(QThread):
             self.game_time = self.game_time.addSecs(1)
             self.timeChanged.emit(self.game_time)
 
+class GuideWidget(QWidget):
+    returnToMainMenu = pyqtSignal()  # Добавляем сигнал
+
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        label = QLabel("Руководство")
+        label.setStyleSheet("font-size: 24pt;")
+        label.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        layout.addWidget(label)
+
+        guide_text = QLabel(
+            "Игра Кликомания - это головоломка. В этой игре есть стакан с кубиками разных цветов, "
+            "а задача этой игры состоит в том, что нужно удалять эти группы кубиков одного цвета, нажимая на них. "
+            "Когда группа кубиков удаляется, кубики, находящиеся выше, падают вниз. "
+            "Цель игры - очистить весь стакан или удалить как можно больше кубиков и набрать максимальное количество очков."
+        )
+        guide_text.setStyleSheet("font-size: 18pt;")
+        guide_text.setWordWrap(True)
+        layout.addWidget(guide_text)
+
+        back_button = QPushButton('Назад')
+        back_button.clicked.connect(self.return_to_main_menu)
+        layout.addWidget(back_button)
+
+        self.setLayout(layout)
+
+    def return_to_main_menu(self):
+        self.returnToMainMenu.emit()
 
 class MainMenu(QMainWindow):
     def __init__(self):
@@ -91,11 +122,14 @@ class MainMenu(QMainWindow):
         settings_button.clicked.connect(self.show_settings)
         layout.addWidget(settings_button)
 
+        guide_button = QPushButton('Руководство')  # Добавляем кнопку "Руководство"
+        guide_button.clicked.connect(self.show_guide)
+        layout.addWidget(guide_button)
+
         exit_button = QPushButton('Выход')
         exit_button.clicked.connect(self.close)
         layout.addWidget(exit_button)
 
-        # Выравнивание по центру
         layout.setAlignment(Qt.AlignHCenter)
 
         self.main_menu_widget.setLayout(layout)
@@ -107,7 +141,10 @@ class MainMenu(QMainWindow):
         back_button.clicked.connect(self.show_main_menu)
         self.settings_widget.layout().addWidget(back_button)
         self.central_widget.addWidget(self.settings_widget)
-        self.settings_widget.hide()
+
+        self.guide_widget = GuideWidget()  # Создаем виджет "Руководство"
+        self.guide_widget.returnToMainMenu.connect(self.show_main_menu)
+        self.central_widget.addWidget(self.guide_widget)
 
     def play_game(self):
         self.game_widget = ClickomaniaGame(sound_effect=self.sound_effect)
@@ -118,9 +155,26 @@ class MainMenu(QMainWindow):
     def show_settings(self):
         self.central_widget.setCurrentWidget(self.settings_widget)
 
+    def show_guide(self):  # Метод для показа руководства
+        self.central_widget.setCurrentWidget(self.guide_widget)
+
     def show_main_menu(self):
         self.central_widget.setCurrentWidget(self.main_menu_widget)
 
+    def play_game(self):
+        self.game_widget = ClickomaniaGame(sound_effect=self.sound_effect)
+        self.game_widget.returnToMainMenu.connect(self.show_main_menu)
+        self.central_widget.addWidget(self.game_widget)
+        self.central_widget.setCurrentWidget(self.game_widget)
+
+    def show_settings(self):
+        self.central_widget.setCurrentWidget(self.settings_widget)
+
+    def show_guide(self):
+        self.central_widget.setCurrentWidget(self.guide_widget)
+
+    def show_main_menu(self):
+        self.central_widget.setCurrentWidget(self.main_menu_widget)
 
 class ClickomaniaGame(QWidget):
     returnToMainMenu = pyqtSignal()
@@ -166,7 +220,7 @@ class ClickomaniaGame(QWidget):
         self.personal_record_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_layout.addWidget(self.personal_record_label)
 
-        self.game_time = QTime(0        , 0)
+        self.game_time = QTime(0, 0)
         self.time_label = QLabel('Время: 00:00')
         self.time_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_layout.addWidget(self.time_label)
@@ -314,29 +368,24 @@ class ClickomaniaGame(QWidget):
             return False
 
     def remove_column(self, col):
-        # Удаляем виджеты из удалённого столбца
         for row in range(len(self.buttons)):
             if self.buttons[row][col] is not None:
                 self.grid_layout.removeWidget(self.buttons[row][col])
                 self.buttons[row][col].deleteLater()
                 self.buttons[row][col] = None
 
-        # Сдвигаем все столбцы влево
         for j in range(col + 1, len(self.buttons[0])):
             for row in range(len(self.buttons)):
                 self.buttons[row][j - 1] = self.buttons[row][j]
                 if self.buttons[row][j - 1] is not None:
                     self.grid_layout.removeWidget(self.buttons[row][j - 1])
                     self.grid_layout.addWidget(self.buttons[row][j - 1], row, j - 1)
-                    # Обновляем сигнал нажатия кнопки
                     self.buttons[row][j - 1].clicked.disconnect()
                     self.buttons[row][j - 1].clicked.connect(partial(self.on_button_click, row, j - 1))
 
-        # Очищаем последний столбец
         for row in range(len(self.buttons)):
             self.buttons[row][len(self.buttons[0]) - 1] = None
 
-        # Обновляем интерфейс после всех изменений
         self.grid_layout.update()
 
     def check_empty_columns(self):
@@ -360,7 +409,7 @@ class ClickomaniaGame(QWidget):
                     empty_row -= 1
 
     def remove_empty_columns(self):
-        for col in range(len(self.buttons[0]) -1, -1, -1):
+        for col in range(len(self.buttons[0]) - 1, -1, -1):
             if self.is_column_empty(col):
                 self.remove_column(col)
 
@@ -398,10 +447,8 @@ class ClickomaniaGame(QWidget):
             self.game_time = self.game_time.addSecs(1)
             self.time_label.setText(f'Время: {self.game_time.toString("mm:ss")}')
 
-
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     main_menu = MainMenu()
     main_menu.show()
     sys.exit(app.exec_())
-
