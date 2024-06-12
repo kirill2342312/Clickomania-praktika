@@ -83,7 +83,7 @@ class GuideWidget(QWidget):
         guide_text.setWordWrap(True)
         layout.addWidget(guide_text)
 
-        back_button = QPushButton('Назад')
+        back_button = QPushButton('Вернуться в главное меню')
         back_button.clicked.connect(self.return_to_main_menu)
         layout.addWidget(back_button)
 
@@ -122,7 +122,7 @@ class MainMenu(QMainWindow):
         settings_button.clicked.connect(self.show_settings)
         layout.addWidget(settings_button)
 
-        guide_button = QPushButton('Руководство')  
+        guide_button = QPushButton('Руководство')
         guide_button.clicked.connect(self.show_guide)
         layout.addWidget(guide_button)
 
@@ -137,12 +137,12 @@ class MainMenu(QMainWindow):
 
         self.settings_widget = SettingsWidget()
         self.settings_widget.sound_effect = self.sound_effect
-        back_button = QPushButton('Назад')
+        back_button = QPushButton('Вернуться в главное меню')
         back_button.clicked.connect(self.show_main_menu)
         self.settings_widget.layout().addWidget(back_button)
         self.central_widget.addWidget(self.settings_widget)
 
-        self.guide_widget = GuideWidget() 
+        self.guide_widget = GuideWidget()
         self.guide_widget.returnToMainMenu.connect(self.show_main_menu)
         self.central_widget.addWidget(self.guide_widget)
 
@@ -225,7 +225,7 @@ class ClickomaniaGame(QWidget):
         self.time_label.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self.button_layout.addWidget(self.time_label)
 
-        self.back_button = QPushButton('Назад')
+        self.back_button = QPushButton('Вернуться в главное меню')
         self.back_button.clicked.connect(self.return_to_main_menu)
         self.button_layout.addWidget(self.back_button)
 
@@ -260,14 +260,14 @@ class ClickomaniaGame(QWidget):
     def check_game_state(self):
         # Проверка на победу
         if all(button is None for row in self.buttons for button in row):
-            QTimer.singleShot(100, lambda: self.show_message("Поздравляем!", "Вы очистили все кубики, Вы выиграли!"))
+            QTimer.singleShot(100, lambda: self.show_message("Поздравляем!", "Все кубики очищены, Вы выиграли!"))
             return
 
         # Проверка на поражение
         if not any(self.has_adjacent_same_color(i, j) for i in range(len(self.buttons)) for j in
                    range(len(self.buttons[i])) if self.buttons[i][j] is not None):
             QTimer.singleShot(100, lambda: self.show_message("Конец игры", "Больше нет смежных кубиков. Вы проиграли ;("))
-            self.stop_game()  
+            self.stop_game()
             return
 
     def has_adjacent_same_color(self, row, col):
