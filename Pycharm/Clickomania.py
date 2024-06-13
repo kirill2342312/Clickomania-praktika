@@ -260,7 +260,7 @@ class ClickomaniaGame(QWidget):
     def check_game_state(self):
         # Проверка на победу
         if all(button is None for row in self.buttons for button in row):
-            QTimer.singleShot(100, lambda: self.show_message("Поздравляем!", "Все кубики очищены, Вы выиграли!"))
+            QTimer.singleShot(100, lambda: self.show_message("Победа!", "Все кубики очищены, Вы выиграли!"))
             return
 
         # Проверка на поражение
