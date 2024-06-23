@@ -17,17 +17,22 @@ class SettingsWidget(QWidget):
 
         label = QLabel("Настройки")
         label.setStyleSheet("font-size: 24pt;")
-        label.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        label.setAlignment(Qt.AlignHCenter)
         layout.addWidget(label)
 
+        settings_layout = QVBoxLayout()
+
         volume_label = QLabel("Звук")
-        layout.addWidget(volume_label)
         volume_label.setStyleSheet("font-size: 18pt;")
+        settings_layout.addWidget(volume_label)
 
         self.volume_checkbox = QCheckBox("Включить звук")
         self.volume_checkbox.setChecked(True)
         self.volume_checkbox.setStyleSheet("font-size: 18pt;")
-        layout.addWidget(self.volume_checkbox)
+        settings_layout.addWidget(self.volume_checkbox)
+
+        settings_layout.addStretch()
+        layout.addLayout(settings_layout)
 
         self.setLayout(layout)
 
@@ -70,8 +75,10 @@ class GuideWidget(QWidget):
 
         label = QLabel("Руководство")
         label.setStyleSheet("font-size: 24pt;")
-        label.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+        label.setAlignment(Qt.AlignHCenter)
         layout.addWidget(label)
+
+        guide_layout = QVBoxLayout()
 
         guide_text = QLabel(
             "Игра Кликомания - это головоломка. В этой игре есть стакан с кубиками разных цветов, "
@@ -81,7 +88,10 @@ class GuideWidget(QWidget):
         )
         guide_text.setStyleSheet("font-size: 18pt;")
         guide_text.setWordWrap(True)
-        layout.addWidget(guide_text)
+        guide_layout.addWidget(guide_text)
+
+        guide_layout.addStretch()
+        layout.addLayout(guide_layout)
 
         back_button = QPushButton('Вернуться в главное меню')
         back_button.clicked.connect(self.return_to_main_menu)
@@ -99,7 +109,7 @@ class MainMenu(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle('Кликомания')
-        self.setFixedSize(600, 600)
+        self.setFixedSize(550, 600)
 
         self.sound_effect = QMediaPlayer(self)
 
