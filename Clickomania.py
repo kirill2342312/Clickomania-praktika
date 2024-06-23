@@ -4,104 +4,6 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 import random
 import sys
 from functools import partial
-
-class SettingsWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-        self.sound_effect = None
-        self.volume_enabled = True
-
-    def initUI(self):
-        layout = QVBoxLayout()
-
-        label = QLabel("Настройки")
-        label.setStyleSheet("font-size: 24pt;")
-        label.setAlignment(Qt.AlignHCenter)
-        layout.addWidget(label)
-
-        settings_layout = QVBoxLayout()
-
-        volume_label = QLabel("Звук")
-        volume_label.setStyleSheet("font-size: 18pt;")
-        settings_layout.addWidget(volume_label)
-
-        self.volume_checkbox = QCheckBox("Включить звук")
-        self.volume_checkbox.setChecked(True)
-        self.volume_checkbox.setStyleSheet("font-size: 18pt;")
-        settings_layout.addWidget(self.volume_checkbox)
-
-        settings_layout.addStretch()
-        layout.addLayout(settings_layout)
-
-        self.setLayout(layout)
-
-        self.volume_checkbox.stateChanged.connect(self.toggle_volume)
-
-    def toggle_volume(self):
-        self.volume_enabled = not self.volume_enabled
-        if self.sound_effect:
-            if self.volume_enabled:
-                self.sound_effect.setVolume(100)
-            else:
-                self.sound_effect.setVolume(0)
-
-class TimerThread(QThread):
-    timeChanged = pyqtSignal(QTime)
-
-    def __init__(self):
-        super().__init__()
-        self.game_time = QTime(0, 0)
-        self.running = True
-
-    def stop(self):
-        self.running = False
-
-    def run(self):
-        while self.running:
-            self.msleep(1000)
-            self.game_time = self.game_time.addSecs(1)
-            self.timeChanged.emit(self.game_time)
-
-class GuideWidget(QWidget):
-    returnToMainMenu = pyqtSignal()  # Добавляем сигнал
-
-    def __init__(self):
-        super().__init__()
-        self.initUI()
-
-    def initUI(self):
-        layout = QVBoxLayout()
-
-        label = QLabel("Руководство")
-        label.setStyleSheet("font-size: 24pt;")
-        label.setAlignment(Qt.AlignHCenter)
-        layout.addWidget(label)
-
-        guide_layout = QVBoxLayout()
-
-        guide_text = QLabel(
-            "Игра Кликомания - это головоломка. В этой игре есть стакан с кубиками разных цветов, "
-            "а задача этой игры состоит в том, что нужно удалять эти группы кубиков одного цвета, нажимая на них. "
-            "Когда группа кубиков удаляется, кубики, находящиеся выше, падают вниз. "
-            "Цель игры - очистить весь стакан или удалить как можно больше кубиков и набрать максимальное количество очков."
-        )
-        guide_text.setStyleSheet("font-size: 18pt;")
-        guide_text.setWordWrap(True)
-        guide_layout.addWidget(guide_text)
-
-        guide_layout.addStretch()
-        layout.addLayout(guide_layout)
-
-        back_button = QPushButton('Вернуться в главное меню')
-        back_button.clicked.connect(self.return_to_main_menu)
-        layout.addWidget(back_button)
-
-        self.setLayout(layout)
-
-    def return_to_main_menu(self):
-        self.returnToMainMenu.emit()
-
 class MainMenu(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -185,7 +87,6 @@ class MainMenu(QMainWindow):
 
     def show_main_menu(self):
         self.central_widget.setCurrentWidget(self.main_menu_widget)
-
 class ClickomaniaGame(QWidget):
     returnToMainMenu = pyqtSignal()
 
@@ -405,7 +306,7 @@ class ClickomaniaGame(QWidget):
             self.remove_empty_columns()
             self.update_personal_record(self.score)
 
-            self.check_game_state() # Проверка состояния игры после удаления группы
+            self.check_game_state() #Проверка состояния игры после удаления группы
 
             return True
         else:
@@ -428,7 +329,7 @@ class ClickomaniaGame(QWidget):
                     self.buttons[row][j - 1].clicked.connect(partial(self.on_button_click, row, j - 1))
 
         for row in range(len(self.buttons)):
-            self.buttons[row][len(self.buttons[0]) - 1] = None
+            self.buttons[row][len(self.buttons[0]) - 1] = None #Установка пустых столбцов
 
         self.grid_layout.update()
 
@@ -449,7 +350,7 @@ class ClickomaniaGame(QWidget):
                         self.grid_layout.removeWidget(button)
                         self.grid_layout.addWidget(button, empty_row, col)
                         button.clicked.disconnect()
-                        button.clicked.connect(partial(self.on_button_click, empty_row, col))
+                        button.clicked.connect(partial(self.on_button_click, empty_row, col)) #При нажатии на кубик передаются координаты строки и столбца
                     empty_row -= 1
 
     def remove_empty_columns(self):
@@ -497,7 +398,102 @@ class ClickomaniaGame(QWidget):
             for button in row:
                 if button is not None:
                     button.setEnabled(False)
+class SettingsWidget(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+        self.sound_effect = None
+        self.volume_enabled = True
 
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        label = QLabel("Настройки")
+        label.setStyleSheet("font-size: 24pt;")
+        label.setAlignment(Qt.AlignHCenter)
+        layout.addWidget(label)
+
+        settings_layout = QVBoxLayout()
+
+        volume_label = QLabel("Звук")
+        volume_label.setStyleSheet("font-size: 18pt;")
+        settings_layout.addWidget(volume_label)
+
+        self.volume_checkbox = QCheckBox("Включить звук")
+        self.volume_checkbox.setChecked(True)
+        self.volume_checkbox.setStyleSheet("font-size: 18pt;")
+        settings_layout.addWidget(self.volume_checkbox)
+
+        settings_layout.addStretch()
+        layout.addLayout(settings_layout)
+
+        self.setLayout(layout)
+
+        self.volume_checkbox.stateChanged.connect(self.toggle_volume)
+
+    def toggle_volume(self):
+        self.volume_enabled = not self.volume_enabled
+        if self.sound_effect:
+            if self.volume_enabled:
+                self.sound_effect.setVolume(100)
+            else:
+                self.sound_effect.setVolume(0)
+
+class TimerThread(QThread):
+    timeChanged = pyqtSignal(QTime)
+
+    def __init__(self):
+        super().__init__()
+        self.game_time = QTime(0, 0)
+        self.running = True
+
+    def stop(self):
+        self.running = False
+
+    def run(self):
+        while self.running:
+            self.msleep(1000)
+            self.game_time = self.game_time.addSecs(1)
+            self.timeChanged.emit(self.game_time)
+
+class GuideWidget(QWidget):
+    returnToMainMenu = pyqtSignal()
+
+    def __init__(self):
+        super().__init__()
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+
+        label = QLabel("Руководство")
+        label.setStyleSheet("font-size: 24pt;")
+        label.setAlignment(Qt.AlignHCenter)
+        layout.addWidget(label)
+
+        guide_layout = QVBoxLayout()
+
+        guide_text = QLabel(
+            "Игра Кликомания - это головоломка. В этой игре есть стакан с кубиками разных цветов, "
+            "а задача этой игры состоит в том, что нужно удалять эти группы кубиков одного цвета, нажимая на них. "
+            "Когда группа кубиков удаляется, кубики, находящиеся выше, падают вниз. "
+            "Цель игры - очистить весь стакан или удалить как можно больше кубиков и набрать максимальное количество очков."
+        )
+        guide_text.setStyleSheet("font-size: 18pt;")
+        guide_text.setWordWrap(True)
+        guide_layout.addWidget(guide_text)
+
+        guide_layout.addStretch()
+        layout.addLayout(guide_layout)
+
+        back_button = QPushButton('Вернуться в главное меню')
+        back_button.clicked.connect(self.return_to_main_menu)
+        layout.addWidget(back_button)
+
+        self.setLayout(layout)
+
+    def return_to_main_menu(self):
+        self.returnToMainMenu.emit()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
